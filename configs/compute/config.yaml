@@ -1,0 +1,6 @@
+display_name: null
+engine:
+    type: GlobusComputeEngine
+    strategy: "simple"
+    max_workers_per_node: 4
+    # ... rest of your provider settings ...
