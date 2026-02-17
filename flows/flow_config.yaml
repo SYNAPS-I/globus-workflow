@@ -1,0 +1,24 @@
+# Globus Flow Configuration
+# Collection/Endpoint IDs that need data_access consent
+
+globus:
+  client_id: "99712fc8-f4a1-40c6-afcc-21c69b863968"  # Created at Globus->Settings->Developer
+  flow_id: "3b8afe59-c29e-4d86-be67-3797a4282337" # Set to null to deploy a new flow
+  #flow_id: null   # Set to null to deploy a new flow
+
+endpoints:
+  source_collection_id: "77d0df9e-8450-4b8f-badb-cd20c0676015"
+  dest_collection_id: "05d2c76a-e867-4f67-aa57-76edeb0beda0"
+  compute_endpoint_id: "60e69085-5bd0-43a2-8d4e-e0e216181d02"  # Polaris endpoint ID
+
+paths:
+  source_path: "/2026R1/S26_20260206/analysis/bicer/data/"
+  dest_path: "/SYNAPS-I/data/fine_tune/data/"
+  model_source_path: "/SYNAPS-I/data/fine_tune/analysis/finetuned_model/"
+  model_dest_path: "/2026R1/S26_20260206/analysis/bicer/finetuned_model/"
+
+flow:
+  pi_precision: 10000000  # 10**7
+  command_prune_dir_script: "rm -rf /eagle/SYNAPS-I/data/fine_tune/data/finetuning_data/*"
+  command_pbs_job_script: "qsub -W block=true /eagle/SYNAPS-I/data/fine_tune/data/fine_tune.sh"
+

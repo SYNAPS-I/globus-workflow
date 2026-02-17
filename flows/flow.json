@@ -1,0 +1,74 @@
+{
+  "StartAt": "TriggerPruningProcess",
+  "States": {
+    "TriggerPruningProcess": {
+      "Type": "Action",
+      "Comment": "Clean training directory",
+      "ActionUrl": "https://compute.actions.globus.org",
+      "Parameters": {
+        "endpoint.$": "$.compute_endpoint_id",
+        "function.$": "$.compute_function_id",
+        "kwargs": {
+          "command_pbs_job_script.$": "$.command_prune_dir_script"
+        }
+      },
+      "ResultPath": "$.AnalyzeResult",
+      "WaitTime": 14400,
+      "Next": "TransferFineTuningData"
+    },
+    "TransferFineTuningData": {
+      "Type": "Action",
+      "Comment": "Initial data movement",
+      "ActionUrl": "https://transfer.actions.globus.org/transfer",
+      "Parameters": {
+        "source_endpoint.$": "$.source_endpoint_id",
+        "destination_endpoint.$": "$.destination_endpoint_id",
+        "DATA": [
+          {
+            "source_path.$": "$.source_path",
+            "destination_path.$": "$.destination_path",
+            "recursive": true
+          }
+        ]
+      },
+      "ResultPath": "$.TransferResult",
+      "WaitTime" : 14400,
+      "Next": "TriggerFineTuningProcess"
+    },
+    "TriggerFineTuningProcess": {
+      "Type": "Action",
+      "Comment": "Training function",
+      "ActionUrl": "https://compute.actions.globus.org",
+      "Parameters": {
+        "endpoint.$": "$.compute_endpoint_id",
+        "function.$": "$.compute_function_id",
+        "kwargs": {
+          "command_pbs_job_script.$": "$.command_pbs_job_script"
+        }
+      },
+      "ResultPath": "$.AnalyzeResult",
+      "WaitTime": 14400,
+      "Next": "TransferFineTunedModel"
+    },
+    "TransferFineTunedModel": {
+      "Type": "Action",
+      "Comment": "Model transfer to APS",
+      "ActionUrl": "https://transfer.actions.globus.org/transfer",
+      "Parameters": {
+        "source_endpoint.$": "$.destination_endpoint_id",
+        "destination_endpoint.$": "$.source_endpoint_id",
+        "DATA": [
+          {
+            "source_path.$": "$.model_source_path",
+            "destination_path.$": "$.model_destination_path",
+            "recursive": true
+          }
+        ]
+      },
+      "ResultPath": "$.TransferResult",
+      "WaitTime" : 14400,
+      "End": true
+    }
+  }
+}
+
