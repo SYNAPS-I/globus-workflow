@@ -101,6 +101,10 @@ def get_flow_state_3_65(run_id):
                         for action in run["details"]["action_statuses"]:
                             field = action["state_name"]
                             logger.info(f"Current state: {field}", extra={"run_id": run_id, "status": flow_status})
+                            #TODO
+                            # if field==TriggerFineTuningProcess:
+                            #   check the epoch info via wandb 
+                            #   append info to the log line
                     except (KeyError, TypeError, IndexError):
                         # This block runs if any key is missing or if 'details' is None
                         pass
