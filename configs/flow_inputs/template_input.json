@@ -1,9 +1,0 @@
-{
-    "comment": "Example input for the template flow",
-    "input": {
-        "source_endpoint_id": "<SOURCE_ENDPOINT_UUID>",
-        "destination_endpoint_id": "<DEST_ENDPOINT_UUID>",
-        "source_path": "/data/experiment_001/",
-        "destination_path": "/processed/experiment_001/"
-    }
-}

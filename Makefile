@@ -21,8 +21,8 @@ format: ## Auto-format code
 	uv run ruff check --fix .
 	uv run ruff format .
 
-test: ## Run tests
-	uv run pytest -v
+#test: ## Run tests
+#	uv run pytest -v
 
 clean: ## Remove build artifacts
 	rm -rf build/ dist/ *.egg-info __pycache__ .ruff_cache/
