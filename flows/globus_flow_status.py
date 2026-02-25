@@ -1,4 +1,5 @@
 import os
+import subprocess
 import sys
 import json
 import logging
@@ -7,12 +8,15 @@ import time
 import datetime
 import globus_sdk
 from globus_sdk import GlobusAPIError
+from globus_compute_sdk import Client, Executor
 
 
 # 1. Configuration
 CLIENT_ID = "f600d0cc-fb3b-4dd8-9284-13c20be841be"
 RUN_ID = "9e848ee5-90d3-47f2-8e95-de77f6195f3c"
 TOKEN_FILE = os.path.expanduser("./.globus_tokens.json")
+ENDPOINT_ID = "60e69085-5bd0-43a2-8d4e-e0e216181d02" # Polaris Globus Compute Endpoint ID
+GC_EXECUTOR = Executor(endpoint_id=ENDPOINT_ID)
 
 # Status Check Configuration
 POLL_INTERVAL_SECONDS = 5
@@ -73,6 +77,37 @@ def get_authorizer(client):
         token_response.by_resource_server["flows.globus.org"]["refresh_token"],
         client
     )
+ 
+
+def run_terminal_command(command_pbs_job_script):
+    import subprocess
+    try:
+        # Executes the command and captures the output
+        result = subprocess.run(
+            command_pbs_job_script,
+            shell=True,
+            capture_output=True,
+            text=True
+        )
+        return result.stdout if result.returncode == 0 else result.stderr
+    except Exception as e:
+        return str(e)
+
+
+def get_queue_status():
+    try:
+        # Executes the command and captures the output
+        result = subprocess.run(
+            "python3 pbs_queue_check.py",
+            shell=True,
+            capture_output=True,
+            text=True
+        )
+        return result.stdout if result.returncode == 0 else result.stderr
+    except Exception as e:
+        return str(e)
+    
+
 
 def get_flow_state_3_65(run_id):
     native_client = globus_sdk.NativeAppAuthClient(CLIENT_ID)
@@ -100,11 +135,19 @@ def get_flow_state_3_65(run_id):
                     try:
                         for action in run["details"]["action_statuses"]:
                             field = action["state_name"]
-                            logger.info(f"Current state: {field}", extra={"run_id": run_id, "status": flow_status})
-                            #TODO
-                            # if field==TriggerFineTuningProcess:
-                            #   check the epoch info via wandb 
+                            log_str = f"Current state: {field}"
+
+                            if field == "TriggerFineTuningProcess":
+                              result = get_queue_status()
+                              if result != "": # job exists in queue
+                                job_queue_state =  result.split()[-2]
+                                log_str = f"{log_str}; Job queue: {job_queue_state}"
+                                if job_queue_state == "R": # running state
+                                  wandb_res = run_terminal_command("python3 query_epoch_number_w_total.py")
+                                  log_str = f"{log_str}; Epoch: {wandb_res}"
+
                             #   append info to the log line
+                            logger.info(log_str.rstrip(), extra={"run_id": run_id, "status": flow_status})
                     except (KeyError, TypeError, IndexError):
                         # This block runs if any key is missing or if 'details' is None
                         pass
@@ -129,6 +172,6 @@ if __name__ == "__main__":
 
     timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     log_file_name = f"flow_{timestamp}_{run_id}.log"
-    setup_logging(f"/home/beams/TBICER/flow_ptycho_fine_tune/monitor/{log_file_name}")
+    setup_logging(f"/home/sector26/pythonscripts/SYNAPSI/flow_ptycho_fine_tune/monitor/{log_file_name}")
 
     get_flow_state_3_65(run_id)

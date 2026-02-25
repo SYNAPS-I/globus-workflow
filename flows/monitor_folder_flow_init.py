@@ -77,9 +77,12 @@ def monitor_directory(path, target_file, script_to_run, monitor_flow_script_path
     observer.join()
 
 if __name__ == "__main__":
-    DIRECTORY_TO_WATCH = "/home/beams/TBICER/flow_ptycho_fine_tune/flow/"
+    MY_HOME = "/home/sector26/pythonscripts/SYNAPSI"
+    HOME_DIR = f"{MY_HOME}/globus_workflow"
+
+    DIRECTORY_TO_WATCH = f"{MY_HOME}/flow_ptycho_fine_tune/flow/"
     TARGET_FILENAME = "dm_data_ready"
-    SCRIPT_TO_EXECUTE = "/home/beams/TBICER/projects/synaps-i/flows/sample_flow.py"
-    MONITOR_FLOW_SCRIPT_PATH = "/home/beams/TBICER/projects/synaps-i/flows/globus_flow_status.py"
+    SCRIPT_TO_EXECUTE = f"{HOME_DIR}/flows/sample_flow.py"
+    MONITOR_FLOW_SCRIPT_PATH = f"{HOME_DIR}/flows/globus_flow_status.py"
     
     monitor_directory(DIRECTORY_TO_WATCH, TARGET_FILENAME, SCRIPT_TO_EXECUTE, MONITOR_FLOW_SCRIPT_PATH)

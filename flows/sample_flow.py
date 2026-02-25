@@ -60,7 +60,7 @@ class FlowConfig:
         
         self.scope_requirements = {
             TransferScopes.resource_server: [self.transfer_scope],
-            FlowsScopes.resource_server: [FlowsScopes.manage_flows, FlowsScopes.run],
+            FlowsScopes.resource_server: [FlowsScopes.manage_flows, FlowsScopes.run, FlowsScopes.run_manage],
             # Use the official Compute resource server and scope
             ComputeScopes.resource_server: [ComputeScopes.all]
         }
