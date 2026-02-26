@@ -3,7 +3,7 @@
 
 globus:
   client_id: "99712fc8-f4a1-40c6-afcc-21c69b863968"  # Created at Globus->Settings->Developer
-  flow_id: "3b8afe59-c29e-4d86-be67-3797a4282337" # null #Set to null to deploy a new flow
+  flow_id: "6d1db115-fb76-4546-a2f0-595e0c0d3b33" # null #Set to null to deploy a new flow
 
 endpoints:
   source_collection_id: "77d0df9e-8450-4b8f-badb-cd20c0676015"
@@ -11,13 +11,13 @@ endpoints:
   compute_endpoint_id: "60e69085-5bd0-43a2-8d4e-e0e216181d02"  # Polaris endpoint ID
 
 paths:
-  source_path: "/2026R1/S26_20260225/analysis/user26id/data/"
-  dest_path: "/SYNAPS-I/data/fine_tune/data/"
+  source_path: "/2026R1/S26_20260225/analysis/user26id/data/" # APS
+  dest_path: "/SYNAPS-I/data/fine_tune/data/" # ALCF
   model_source_path: "/SYNAPS-I/data/fine_tune/analysis/finetuned_model/"
   model_dest_path: "/2026R1/S26_20260225/analysis/user26id/finetuned_model/"
 
 flow:
   pi_precision: 10000000  # 10**7
   command_prune_dir_script: "rm -rf /eagle/SYNAPS-I/data/fine_tune/data/finetuning_data/*"
+  command_prune_post_finetuning: "rm -rf /eagle/SYNAPS-I/data/fine_tune/analysis/finetuned_model/*"
   command_pbs_job_script: "qsub -W block=true /eagle/SYNAPS-I/data/fine_tune/data/fine_tune.sh"
-

@@ -37,6 +37,7 @@ class FlowConfig:
         self.pi_precision = config["flow"]["pi_precision"]
         self.command_pbs_job_script = config["flow"]["command_pbs_job_script"]
         self.command_prune_dir_script = config["flow"]["command_prune_dir_script"]
+        self.command_prune_post_finetuning = config["flow"]["command_prune_post_finetuning"]
         
         # Runtime state (populated during execution)
         self.flow = None
@@ -152,6 +153,7 @@ def run_orchestrated_flow(cfg: FlowConfig):
         "model_destination_path": cfg.model_dest_path,
         "command_pbs_job_script": cfg.command_pbs_job_script,
         "command_prune_dir_script": cfg.command_prune_dir_script,
+		"command_prune_post_finetuning": cfg.command_prune_post_finetuning,
         "compute_endpoint_id": cfg.compute_endpoint_id,
         "compute_function_id": cfg.func_id_run_terminal_command
     }

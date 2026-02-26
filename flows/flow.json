@@ -67,6 +67,21 @@
       },
       "ResultPath": "$.TransferResult",
       "WaitTime" : 14400,
+      "Next": "PostFinetuningCleanup"
+    },
+    "PostFinetuningCleanup": {
+      "Type": "Action",
+      "Comment": "Clean finetuned model directory",
+      "ActionUrl": "https://compute.actions.globus.org",
+      "Parameters": {
+        "endpoint.$": "$.compute_endpoint_id",
+        "function.$": "$.compute_function_id",
+        "kwargs": {
+          "command_pbs_job_script.$": "$.command_prune_post_finetuning"
+        }
+      },
+      "ResultPath": "$.AnalyzeResult",
+      "WaitTime": 14400,
       "End": true
     }
   }
