@@ -1,0 +1,24 @@
+Environment: globus_env_p312
+conda: ~/miniconda3
+
+main script: monitor_folder_flow_init.py
+              | which then calls
+              |
+              |- sample_flow.py: initialize globus flow script defined with flow_config.yaml and flow.json.
+              |- globus_flow_status.py: checks the specified flow run state and writes the output into a log file.
+
+
+
+APS Environment: 
+Target machine (Tao): 26iddm.xray.aps.anl.gov
+
+$ source /dmOpt/workflows/miniforge/etc/profile.d/conda.sh
+$ conda init bash
+$ conda activate synapsi-tb
+$ conda list globus
+# packages in environment at /dmOpt/workflows/miniforge/envs/synapsi-tb:
+#
+# Name                    Version                   Build  Channel
+globus-compute-common     0.7.1              pyhd8ed1ab_0    conda-forge
+globus-compute-sdk        4.5.0              pyhd8ed1ab_0    conda-forge
+globus-sdk                3.65.0             pyhd8ed1ab_0    conda-forge

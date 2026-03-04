@@ -1,0 +1,72 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+*.egg
+dist/
+build/
+eggs/
+*.whl
+pip-wheel-metadata/
+.ruff_cache/
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+
+# uv
+uv.lock
+
+# IDE / Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.settings/
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Secrets and credentials
+*.pem
+*.key
+.env
+.env.*
+!.env.example
+secrets/
+tokens/
+client_secret*.json
+
+# Globus specific
+*.globus_token
+globus_tokens.json
+
+# Logs
+*.log
+logs/
+
+# Data files (large transfers, staging)
+data/
+staging/
+*.hdf5
+*.h5
+*.nxs
+*.tiff
+*.tif
+*.fits
+
+# Config overrides (local)
+configs/local/
+*.local.yaml
+*.local.json
