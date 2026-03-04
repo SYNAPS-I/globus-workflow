@@ -18,7 +18,7 @@ dependencies = [
     "globus-compute-sdk>=2.0",
     "pyyaml>=6.0",
     "watchdog>=3.0",
-    "wandb>=0.15",
+    "wandb>=0.15, <0.21",
 ]
 
 [dependency-groups]
