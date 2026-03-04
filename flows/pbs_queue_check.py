@@ -1,34 +1,33 @@
 from globus_compute_sdk import Client, Executor
+from globus_compute_sdk.serialize import ComputeSerializer, AllCodeStrategies
+from utils import load_config
 
-# 1. Replace with your actual Endpoint ID
-ENDPOINT_ID = "60e69085-5bd0-43a2-8d4e-e0e216181d02"
+# Load configuration from YAML
+CONFIG = load_config()
 
-# 2. Define a simple function to run on the remote node
+ENDPOINT_ID = CONFIG["endpoints"]["compute_endpoint_id"]
 
-def run_terminal_command(command_pbs_job_script):
+
+def _run_command(command: str) -> str:
+    """Execute a shell command (self-contained for remote serialization)."""
     import subprocess
     try:
-        # Executes the command and captures the output
-        result = subprocess.run(
-            command_pbs_job_script,
-            shell=True,
-            capture_output=True,
-            text=True
-        )
+        result = subprocess.run(command, shell=True, capture_output=True, text=True)
         return result.stdout if result.returncode == 0 else result.stderr
     except Exception as e:
         return str(e)
 
+
 def main():
     # Initialize the Client
-    # This will prompt for a login if you haven't authenticated on this machine
     gc_executor = Executor(endpoint_id=ENDPOINT_ID)
+    gc_executor.serializer = ComputeSerializer(strategy_code=AllCodeStrategies())
 
     print(f"Submitting task to endpoint: {ENDPOINT_ID}...")
     
-    # Submit the function
-    #future = gc_executor.submit(hello_world)
-    future = gc_executor.submit(run_terminal_command, ["qstat -u bicer | tail -n 1"])
+    pbs_user = CONFIG["pbs"]["user"]
+    tail_lines = CONFIG["pbs"]["tail_lines"]
+    future = gc_executor.submit(_run_command, f"qstat -u {pbs_user} | tail -n {tail_lines}")
 
     # Get the result
     try:

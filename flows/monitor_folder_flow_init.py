@@ -4,6 +4,13 @@ import time
 import datetime
 from watchdog.observers.polling import PollingObserver as Observer
 from watchdog.events import FileSystemEventHandler
+from utils import load_config
+
+# Load configuration from YAML
+CONFIG = load_config()
+
+PYTHON_EXECUTABLE = CONFIG["monitoring"]["python_executable"]
+MONITOR_LOG_DIRECTORY = CONFIG["monitoring"]["monitor_log_directory"]
 
 # Copy current environment and add PYTHONUNBUFFERED
 env = os.environ.copy()
@@ -24,7 +31,7 @@ class FileTriggerHandler(FileSystemEventHandler):
 
         try:
             # Trigger secondary process
-            result = subprocess.run(["/home/beams/TBICER/miniconda3/envs/globus_env_p312/bin/python", self.script_to_run], 
+            result = subprocess.run([PYTHON_EXECUTABLE, self.script_to_run], 
                                     check=True,
                                     capture_output=True,
                                     text=True)
@@ -36,11 +43,11 @@ class FileTriggerHandler(FileSystemEventHandler):
 
                 timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
                 tfile = f"initialized_flow_{timestamp}_{flow_id}"
-                with open(f"/home/beams/TBICER/flow_ptycho_fine_tune/monitor/{tfile}", "x"): pass # This should create file 
+                with open(os.path.join(MONITOR_LOG_DIRECTORY, tfile), "x"): pass # This should create file 
 
                 # Launch the detached external script
                 subprocess.Popen(
-                    ["/home/beams/TBICER/miniconda3/envs/globus_env_p312/bin/python", self.monitor_flow_script_path, flow_id], 
+                    [PYTHON_EXECUTABLE, self.monitor_flow_script_path, flow_id], 
                     start_new_session=True,        # DETACH: Creates a new process group (Linux/macOS)
                     env=env,                       # Unbuffered writes for the logger
                     stdout=subprocess.DEVNULL,     # Redirect output to void to prevent broken pipes
@@ -77,12 +84,9 @@ def monitor_directory(path, target_file, script_to_run, monitor_flow_script_path
     observer.join()
 
 if __name__ == "__main__":
-    MY_HOME = "/home/sector26/pythonscripts/SYNAPSI"
-    HOME_DIR = f"{MY_HOME}/globus_workflow"
-
-    DIRECTORY_TO_WATCH = f"{MY_HOME}/flow_ptycho_fine_tune/flow/"
-    TARGET_FILENAME = "dm_data_ready"
-    SCRIPT_TO_EXECUTE = f"{HOME_DIR}/flows/sample_flow.py"
-    MONITOR_FLOW_SCRIPT_PATH = f"{HOME_DIR}/flows/globus_flow_status.py"
+    DIRECTORY_TO_WATCH = CONFIG["monitoring"]["directory_to_watch"]
+    TARGET_FILENAME = CONFIG["monitoring"]["target_filename"]
+    SCRIPT_TO_EXECUTE = CONFIG["monitoring"]["script_to_execute"]
+    MONITOR_FLOW_SCRIPT_PATH = CONFIG["monitoring"]["monitor_flow_script_path"]
     
     monitor_directory(DIRECTORY_TO_WATCH, TARGET_FILENAME, SCRIPT_TO_EXECUTE, MONITOR_FLOW_SCRIPT_PATH)

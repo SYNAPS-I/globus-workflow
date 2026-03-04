@@ -1,4 +1,5 @@
 import os
+import sys
 import json
 import logging
 import argparse
@@ -6,15 +7,20 @@ import time
 import globus_sdk
 from globus_sdk import GlobusAPIError
 
+# Allow imports from the flows/ directory
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "flows"))
+from utils import load_config
+from globus_auth import get_authorizer
 
-# 1. Configuration
-CLIENT_ID = "f600d0cc-fb3b-4dd8-9284-13c20be841be"
-RUN_ID = "9e848ee5-90d3-47f2-8e95-de77f6195f3c"
-TOKEN_FILE = os.path.expanduser("./.globus_tokens.json")
+# 1. Configuration (from flow_config.yaml)
+CONFIG = load_config()
+CLIENT_ID = CONFIG["globus"]["native_app_client_id"]
+TOKEN_FILE = CONFIG["globus"]["token_file"]
+RUN_ID = CONFIG["globus"]["default_run_id"]
 
 # Status Check Configuration
-POLL_INTERVAL_SECONDS = 5
-TERMINAL_STATES = {"SUCCEEDED", "FAILED"}
+POLL_INTERVAL_SECONDS = CONFIG["monitoring"]["poll_interval_seconds"]
+TERMINAL_STATES = set(CONFIG["monitoring"]["terminal_states"])
 
 
 
@@ -29,43 +35,6 @@ logger = logging.getLogger(__name__)
 
 
 # Functions
-def get_authorizer(client):
-    """Loads tokens from disk or performs a new login."""
-    if os.path.exists(TOKEN_FILE):
-        with open(TOKEN_FILE, "r") as f:
-            tokens = json.load(f)
-        
-        # Use the refresh token to keep the session alive indefinitely
-        return globus_sdk.RefreshTokenAuthorizer(
-            tokens["flows.globus.org"]["refresh_token"],
-            client,
-            access_token=tokens["flows.globus.org"]["access_token"],
-            expires_at=tokens["flows.globus.org"]["expires_at_seconds"]
-        )
-
-    # If no token file, do the browser login flow
-    scopes = [
-        globus_sdk.FlowsClient.scopes.manage_flows,
-        globus_sdk.FlowsClient.scopes.view_flows,
-        globus_sdk.FlowsClient.scopes.run_status,
-        "offline_access" # Required to get a refresh_token
-    ]
-    
-    client.oauth2_start_flow(requested_scopes=scopes, refresh_tokens=True)
-    print(f"Please login here:\n{client.oauth2_get_authorize_url()}\n")
-    auth_code = input("Enter the auth code: ").strip()
-    
-    token_response = client.oauth2_exchange_code_for_tokens(auth_code)
-    
-    # Save tokens to disk for next time
-    with open(TOKEN_FILE, "w") as f:
-        json.dump(token_response.by_resource_server, f)
-        
-    return globus_sdk.RefreshTokenAuthorizer(
-        token_response.by_resource_server["flows.globus.org"]["refresh_token"],
-        client
-    )
-
 def monitor_flow_run(run_id: str):
     """
     Continuously polls a Globus Flow run and reports its status to stdout.
@@ -74,7 +43,7 @@ def monitor_flow_run(run_id: str):
     previous_status = None
 
     native_client = globus_sdk.NativeAppAuthClient(CLIENT_ID)
-    authorizer = get_authorizer(native_client)
+    authorizer = get_authorizer(native_client, TOKEN_FILE)
     
     flows_client = globus_sdk.FlowsClient(authorizer=authorizer)
 
@@ -118,7 +87,7 @@ def monitor_flow_run(run_id: str):
 
 def get_flow_state_3_65(run_id):
     native_client = globus_sdk.NativeAppAuthClient(CLIENT_ID)
-    authorizer = get_authorizer(native_client)
+    authorizer = get_authorizer(native_client, TOKEN_FILE)
     
     flows_client = globus_sdk.FlowsClient(authorizer=authorizer)
 

@@ -10,11 +10,16 @@ import os
 import sys
 from typing import Any
 
+from utils import load_config
+
 try:
     import wandb  # type: ignore
 except Exception as exc:
     print(f"ERROR: wandb is required to run this script: {exc}", file=sys.stderr)
     raise SystemExit(1)
+
+# Load configuration from YAML
+CONFIG = load_config()
 
 
 def _is_valid_loss(value: Any) -> bool:
@@ -57,16 +62,28 @@ def _count_valid_train_loss(run: Any) -> int:
 
 
 def get_current_epoch(
-    wandb_entity: str = "SYNAPS-I",
-    project: str = "OnlineLearning",
-    wandb_run_id: str | None = None,
-    wandb_api_key: str | None = None,
+    wandb_entity: str = CONFIG["wandb"]["entity"],
+    project: str = CONFIG["wandb"]["project"],
+    wandb_run_id: str | None = CONFIG["wandb"].get("run_id"),
+    wandb_api_key: str | None = CONFIG["wandb"].get("api_key"),
+    wandb_api_key_path: str | None = CONFIG["wandb"].get("api_key_path"),
     verbose: bool = False,
 ) -> tuple[int, int]:
     """Return (current_epoch, total_epochs) for a W&B run."""
-    resolved_api_key = wandb_api_key or os.environ.get("WANDB_API_KEY")
+    resolved_api_key = wandb_api_key
+    if not resolved_api_key and wandb_api_key_path:
+        try:
+            with open(wandb_api_key_path) as f:
+                resolved_api_key = f.read().strip()
+        except OSError:
+            pass
     if not resolved_api_key:
-        raise RuntimeError("WANDB_API_KEY is not set in the environment")
+        resolved_api_key = os.environ.get("WANDB_API_KEY")
+    if not resolved_api_key:
+        raise RuntimeError(
+            "WANDB API key not found. Set wandb.api_key or wandb.api_key_path "
+            "in flow_config.yaml, or export WANDB_API_KEY."
+        )
     os.environ["WANDB_API_KEY"] = resolved_api_key
 
     api = wandb.Api()
@@ -113,22 +130,22 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--wandb-entity",
-        default="SYNAPS-I",
-        help="W&B entity/user/team (default: SYNAPS-I)",
+        default=CONFIG["wandb"]["entity"],
+        help=f"W&B entity/user/team (default: {CONFIG['wandb']['entity']})",
     )
     parser.add_argument(
         "--project",
-        default="OnlineLearning",
-        help="W&B project name (default: OnlineLearning)",
+        default=CONFIG["wandb"]["project"],
+        help=f"W&B project name (default: {CONFIG['wandb']['project']})",
     )
     parser.add_argument(
         "--wandb-run-id",
-        default=None,
+        default=CONFIG["wandb"].get("run_id"),
         help="Optional W&B run ID. If omitted, uses the latest run in the project.",
     )
     parser.add_argument(
         "--wandb-api-key",
-        default="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",
+        default=CONFIG["wandb"].get("api_key"),
         help="W&B API key. If omitted, reads WANDB_API_KEY from environment.",
     )
     parser.add_argument(

@@ -9,18 +9,22 @@ import datetime
 import globus_sdk
 from globus_sdk import GlobusAPIError
 from globus_compute_sdk import Client, Executor
+from globus_auth import get_authorizer
+from utils import load_config, run_local_terminal_command
 
 
-# 1. Configuration
-CLIENT_ID = "f600d0cc-fb3b-4dd8-9284-13c20be841be"
-RUN_ID = "9e848ee5-90d3-47f2-8e95-de77f6195f3c"
-TOKEN_FILE = os.path.expanduser("./.globus_tokens.json")
-ENDPOINT_ID = "60e69085-5bd0-43a2-8d4e-e0e216181d02" # Polaris Globus Compute Endpoint ID
+# 1. Configuration — loaded from YAML
+CONFIG = load_config()
+
+CLIENT_ID = CONFIG["globus"]["native_app_client_id"]
+RUN_ID = CONFIG["globus"]["default_run_id"]
+TOKEN_FILE = CONFIG["globus"]["token_file"]
+ENDPOINT_ID = CONFIG["endpoints"]["compute_endpoint_id"]
 GC_EXECUTOR = Executor(endpoint_id=ENDPOINT_ID)
 
 # Status Check Configuration
-POLL_INTERVAL_SECONDS = 5
-TERMINAL_STATES = {"SUCCEEDED", "FAILED"}
+POLL_INTERVAL_SECONDS = CONFIG["monitoring"]["poll_interval_seconds"]
+TERMINAL_STATES = set(CONFIG["monitoring"]["terminal_states"])
 
 # Logger setup
 logger = logging.getLogger(__name__)
@@ -41,59 +45,6 @@ def setup_logging(log_filename):
 
 
 # Functions
-def get_authorizer(client):
-    """Loads tokens from disk or performs a new login."""
-    if os.path.exists(TOKEN_FILE):
-        with open(TOKEN_FILE, "r") as f:
-            tokens = json.load(f)
-        
-        # Use the refresh token to keep the session alive indefinitely
-        return globus_sdk.RefreshTokenAuthorizer(
-            tokens["flows.globus.org"]["refresh_token"],
-            client,
-            access_token=tokens["flows.globus.org"]["access_token"],
-            expires_at=tokens["flows.globus.org"]["expires_at_seconds"]
-        )
-
-    # If no token file, do the browser login flow
-    scopes = [
-        globus_sdk.FlowsClient.scopes.manage_flows,
-        globus_sdk.FlowsClient.scopes.view_flows,
-        globus_sdk.FlowsClient.scopes.run_status,
-        "offline_access" # Required to get a refresh_token
-    ]
-    
-    client.oauth2_start_flow(requested_scopes=scopes, refresh_tokens=True)
-    print(f"Please login here:\n{client.oauth2_get_authorize_url()}\n")
-    auth_code = input("Enter the auth code: ").strip()
-    
-    token_response = client.oauth2_exchange_code_for_tokens(auth_code)
-    
-    # Save tokens to disk for next time
-    with open(TOKEN_FILE, "w") as f:
-        json.dump(token_response.by_resource_server, f)
-        
-    return globus_sdk.RefreshTokenAuthorizer(
-        token_response.by_resource_server["flows.globus.org"]["refresh_token"],
-        client
-    )
- 
-
-def run_terminal_command(command_pbs_job_script):
-    import subprocess
-    try:
-        # Executes the command and captures the output
-        result = subprocess.run(
-            command_pbs_job_script,
-            shell=True,
-            capture_output=True,
-            text=True
-        )
-        return result.stdout if result.returncode == 0 else result.stderr
-    except Exception as e:
-        return str(e)
-
-
 def get_queue_status():
     try:
         # Executes the command and captures the output
@@ -111,7 +62,7 @@ def get_queue_status():
 
 def get_flow_state_3_65(run_id):
     native_client = globus_sdk.NativeAppAuthClient(CLIENT_ID)
-    authorizer = get_authorizer(native_client)
+    authorizer = get_authorizer(native_client, TOKEN_FILE)
     
     flows_client = globus_sdk.FlowsClient(authorizer=authorizer)
 
@@ -143,7 +94,7 @@ def get_flow_state_3_65(run_id):
                                 job_queue_state =  result.split()[-2]
                                 log_str = f"{log_str}; Job queue: {job_queue_state}"
                                 if job_queue_state == "R": # running state
-                                  wandb_res = run_terminal_command("python3 query_epoch_number_w_total.py")
+                                  wandb_res = run_local_terminal_command("python3 query_epoch_number_w_total.py")
                                   log_str = f"{log_str}; Epoch: {wandb_res}"
 
                             #   append info to the log line
@@ -165,13 +116,14 @@ def get_flow_state_3_65(run_id):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Monitor the status of a Globus Flow run.")
-    parser.add_argument("run_id", type=str, nargs='?', default="9e848ee5-90d3-47f2-8e95-de77f6195f3c", help="The UUID of the Globus Flow run to monitor")
+    parser.add_argument("run_id", type=str, nargs='?', default=RUN_ID, help="The UUID of the Globus Flow run to monitor")
     args = parser.parse_args()
 
     run_id = args.run_id
 
     timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     log_file_name = f"flow_{timestamp}_{run_id}.log"
-    setup_logging(f"/home/sector26/pythonscripts/SYNAPSI/flow_ptycho_fine_tune/monitor/{log_file_name}")
+    log_dir = CONFIG["monitoring"]["log_directory"]
+    setup_logging(os.path.join(log_dir, log_file_name))
 
     get_flow_state_3_65(run_id)

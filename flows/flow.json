@@ -9,7 +9,7 @@
         "endpoint.$": "$.compute_endpoint_id",
         "function.$": "$.compute_function_id",
         "kwargs": {
-          "command_pbs_job_script.$": "$.command_prune_dir_script"
+          "command.$": "$.command_prune_dir_script"
         }
       },
       "ResultPath": "$.AnalyzeResult",
@@ -43,7 +43,7 @@
         "endpoint.$": "$.compute_endpoint_id",
         "function.$": "$.compute_function_id",
         "kwargs": {
-          "command_pbs_job_script.$": "$.command_pbs_job_script"
+          "command.$": "$.command_pbs_job_script"
         }
       },
       "ResultPath": "$.AnalyzeResult",
@@ -77,7 +77,7 @@
         "endpoint.$": "$.compute_endpoint_id",
         "function.$": "$.compute_function_id",
         "kwargs": {
-          "command_pbs_job_script.$": "$.command_prune_post_finetuning"
+          "command.$": "$.command_prune_post_finetuning"
         }
       },
       "ResultPath": "$.AnalyzeResult",
